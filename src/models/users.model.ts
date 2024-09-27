@@ -26,3 +26,10 @@ const userSchema = new Schema<UserSchema, Model<UserSchema>>(
 
 export const User = model<UserSchema, Model<UserSchema>>('User', userSchema);
 export type TUser = Document & UserSchema;
+
+let userProperties = '';
+userSchema.eachPath((path) => {
+  userProperties += ' ';
+  userProperties += path;
+});
+export const selectUserProperties = userProperties;

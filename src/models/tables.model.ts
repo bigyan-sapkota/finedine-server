@@ -16,3 +16,10 @@ const tableSchema = new Schema<TableSchema, Model<TableSchema>>({
 });
 
 export const Table = model<TableSchema, Model<TableSchema>>('Table', tableSchema);
+let tableProperties = '';
+tableSchema.eachPath((path) => {
+  tableProperties += ' ';
+  tableProperties += path;
+});
+
+export const selectTableProperties = tableProperties;
