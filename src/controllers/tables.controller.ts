@@ -1,6 +1,7 @@
 import { createTableSchema, fetchTablesSchema, updateTableSchema } from '@/dtos/tables.dto';
 import { ForbiddenException, NotFoundException, UnauthorizedException } from '@/lib/exceptions';
 import { handleAsync } from '@/middlewares/handle-async';
+import { Booking } from '@/models/bookings.model';
 import { Table } from '@/models/tables.model';
 
 export const createTable = handleAsync(async (req, res) => {
@@ -17,10 +18,19 @@ export const updateTable = handleAsync<{ id: string }>(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
   if (req.user.role !== 'admin') throw new ForbiddenException('Only admins can update the table');
 
-  // todo check bookings
   const tableId = req.params.id;
-  const data = updateTableSchema.parse(req.body);
-  const updatedTable = await Table.findByIdAndUpdate(tableId, data);
+  const { available, ...data } = updateTableSchema.parse(req.body);
+
+  const isBooked = await Booking.find({
+    table: tableId,
+    isCancelled: false,
+    startsAt: { $gt: new Date().toISOString() }
+  }).limit(1);
+
+  if (isBooked && Object.keys(data).length !== 0)
+    throw new ForbiddenException("Can't update table while the bookings are pending");
+
+  const updatedTable = await Table.findByIdAndUpdate(tableId, { ...data, available });
   if (!updatedTable) throw new NotFoundException('Table not found');
 
   return res.json({
@@ -33,8 +43,14 @@ export const deleteTable = handleAsync<{ id: string }>(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
   if (req.user.role !== 'admin') throw new ForbiddenException('Only admins can update the table');
 
-  // todo check bookings
   const tableId = req.params.id;
+  const isBooked = await Booking.find({
+    table: tableId,
+    isCancelled: false,
+    startsAt: { $gt: new Date().toISOString() }
+  }).limit(1);
+  if (isBooked) throw new ForbiddenException("Can't delete table while bookings are pending");
+
   const deletedTable = await Table.findByIdAndDelete(tableId);
   if (!deletedTable) throw new NotFoundException('Table not found');
 
@@ -50,7 +66,6 @@ export const fetchTables = handleAsync(async (req, res) => {
 export const getTableDetails = handleAsync<{ id: string }>(async (req, res) => {
   const tableId = req.params.id;
 
-  // todo populate bookings
   const table = await Table.findById(tableId);
   if (!table) throw new NotFoundException('Table not found');
 
