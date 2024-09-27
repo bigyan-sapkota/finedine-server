@@ -4,7 +4,7 @@ import { devConsole } from './utils';
 
 export const connectDatabase = async () => {
   try {
-    const { connection } = await connect(env.MONGO_URI);
+    const { connection } = await connect(env.MONGO_URI, { ignoreUndefined: true });
     devConsole(`⚡[Server]: listening at http://localhost:${connection.host}`.magenta);
   } catch (error) {
     if (error instanceof Error) {

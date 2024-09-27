@@ -13,22 +13,22 @@ import { fetchBookings, validateBookingTables } from '@/services/bookings.servic
 export const bookTables = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
 
-  // bookings by admin
-  if (req.user.role === 'admin') {
-    const data = adminBookTablesSchema.parse(req.body);
-    await validateBookingTables(data);
-    await Booking.insertMany(
-      data.map((item) => ({ ...item, user: item.userId, table: item.tableId }))
-    );
-    return res.json({
-      message: `${data.length === 1 ? 'Booking' : 'Bookings'} created successfully`
-    });
-  }
+  const data =
+    req.user.role === 'admin'
+      ? adminBookTablesSchema.parse(req.body)
+      : bookTablesSchema.parse(req.body);
 
-  const data = bookTablesSchema.parse(req.body);
   await validateBookingTables(data);
   await Booking.insertMany(
-    data.map((item) => ({ ...item, user: req.user?._id.toString(), table: item.tableId }))
+    data.map((item) => {
+      const endsAt = new Date(new Date(item.startsAt).getTime() + item.hours * 60 * 60 * 1000);
+      return {
+        ...item,
+        user: req.user?.role === 'admin' ? item.userId : req.user?._id.toString(),
+        table: item.tableId,
+        endsAt
+      };
+    })
   );
 
   sendBookingNotification({
@@ -37,7 +37,7 @@ export const bookTables = handleAsync(async (req, res) => {
     user: { email: req.user.email, id: req.user._id.toString(), name: req.user.name }
   });
 
-  return res.json({
+  return res.status(201).json({
     message: `${data.length === 1 ? 'Booking' : 'Bookings'} created successfully`
   });
 });

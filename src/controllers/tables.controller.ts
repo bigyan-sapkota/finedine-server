@@ -11,7 +11,7 @@ export const createTable = handleAsync(async (req, res) => {
   const data = createTableSchema.parse(req.body);
   const table = await Table.create(data);
 
-  return res.json({ table, message: 'Table added successfully' });
+  return res.status(201).json({ table, message: 'Table added successfully' });
 });
 
 export const updateTable = handleAsync<{ id: string }>(async (req, res) => {
@@ -29,12 +29,17 @@ export const updateTable = handleAsync<{ id: string }>(async (req, res) => {
 
   if (isBooked && Object.keys(data).length !== 0)
     throw new ForbiddenException("Can't update table while the bookings are pending");
+  console.log(available, 'available');
 
-  const updatedTable = await Table.findByIdAndUpdate(tableId, { ...data, available });
+  const updatedTable = await Table.findByIdAndUpdate(
+    tableId,
+    { ...data, available },
+    { new: true }
+  );
   if (!updatedTable) throw new NotFoundException('Table not found');
 
   return res.json({
-    message: `Table - ${updatedTable.attribute} updated successfully`,
+    message: `Table - ${updatedTable.tag} ${updatedTable.attribute} updated successfully`,
     table: updatedTable
   });
 });
@@ -44,22 +49,26 @@ export const deleteTable = handleAsync<{ id: string }>(async (req, res) => {
   if (req.user.role !== 'admin') throw new ForbiddenException('Only admins can update the table');
 
   const tableId = req.params.id;
-  const isBooked = await Booking.find({
+  const isBooked = await Booking.findOne({
     table: tableId,
     isCancelled: false,
     startsAt: { $gt: new Date().toISOString() }
   }).limit(1);
+
   if (isBooked) throw new ForbiddenException("Can't delete table while bookings are pending");
 
   const deletedTable = await Table.findByIdAndDelete(tableId);
   if (!deletedTable) throw new NotFoundException('Table not found');
 
-  return res.json({ message: `Table - ${deletedTable.attribute} deleted successfully` });
+  return res.json({
+    message: `Table - ${deletedTable.tag} ${deletedTable.attribute} deleted successfully`
+  });
 });
 
 export const fetchTables = handleAsync(async (req, res) => {
   const { tag } = fetchTablesSchema.parse(req.query);
-  const tables = await Table.find(JSON.parse(JSON.stringify({ tag })));
+  console.log({ tag });
+  const tables = await Table.find({ tag: tag });
   return res.json({ tables });
 });
 

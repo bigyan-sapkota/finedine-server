@@ -1,24 +1,27 @@
 import { z } from 'zod';
 
-const dateSchema = z
-  .string()
-  .datetime()
-  .transform((startsAt) => {
-    const date = new Date(startsAt);
-    date.setSeconds(0);
-    date.setMilliseconds(0);
-    return date.toISOString();
-  })
-  .refine((startsAt) => {
-    const date = new Date(startsAt);
-    if (date.getTime() < Date.now()) return false;
-    if (date.getMinutes() % 15 !== 0) return false;
-  }, 'Invalid date selected');
-
 const bookTableSchema = z.object({
   tableId: z.string(),
-  startsAt: dateSchema,
-  endsAt: dateSchema
+  startsAt: z
+    .string()
+    .datetime()
+    .transform((startsAt) => {
+      const date = new Date(startsAt);
+      date.setSeconds(0);
+      date.setMilliseconds(0);
+      return date.toISOString();
+    })
+    .refine((startsAt) => {
+      const date = new Date(startsAt);
+      if (date.getTime() < Date.now()) return false;
+      if (date.getMinutes() % 15 !== 0) return false;
+    }, 'Invalid date selected'),
+  hours: z
+    .number()
+    .min(1, 'Table booking must be at least 1 hours')
+    .max(12, "Table booking can't exceed 12 hours")
+    .transform((val) => Math.round(val)),
+  userId: z.undefined().optional()
 });
 const adminBookTableSchema = bookTableSchema.extend({ userId: z.string() });
 export const bookTablesSchema = z

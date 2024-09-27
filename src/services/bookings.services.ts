@@ -1,19 +1,19 @@
 import { GetBookingsQuerySchema } from '@/dtos/bookings.dto';
 import { BadRequestException } from '@/lib/exceptions';
-import { Booking, BookingSchema } from '@/models/bookings.model';
+import { Booking } from '@/models/bookings.model';
 import { selectTableProperties, Table } from '@/models/tables.model';
 import { selectUserProperties } from '@/models/users.model';
-import { RootFilterQuery } from 'mongoose';
 
 export const validateBookingTables = async (
-  tables: { tableId: string; startsAt: string; endsAt: string }[]
+  tables: { tableId: string; startsAt: string; hours: number }[]
 ) => {
   let promises: Promise<unknown>[] = [];
   let promise: Promise<unknown>;
   for (const table of tables) {
+    const endsAt = new Date(new Date(table.startsAt).getTime() + table.hours * 60 * 60 * 1000);
     promise = Booking.find<{ table: { available: boolean } }>({
       table: table.tableId,
-      $and: [{ startsAt: { $gte: table.startsAt } }, { endsAt: { $lt: table.endsAt } }]
+      $and: [{ startsAt: { $gte: table.startsAt } }, { endsAt: { $lt: endsAt } }]
     }).then((isBooked) => {
       if (isBooked) throw new BadRequestException('Some of the selected table is already booked');
     });
@@ -34,16 +34,12 @@ export const validateBookingTables = async (
 
 export const fetchBookings = async (query: GetBookingsQuerySchema) => {
   const { limit, cursor, isCancelled, userId, tableId } = query;
-  const bookings = await Booking.find(
-    JSON.parse(
-      JSON.stringify({
-        createdAt: cursor ? { $lt: cursor } : undefined,
-        isCancelled: isCancelled,
-        user: userId,
-        table: tableId
-      } satisfies RootFilterQuery<BookingSchema>)
-    )
-  )
+  const bookings = await Booking.find({
+    createdAt: cursor ? { $lt: cursor } : undefined,
+    isCancelled: isCancelled,
+    user: userId,
+    table: tableId
+  })
     .populate('user', selectUserProperties)
     .populate('table', selectTableProperties)
     .limit(limit)
