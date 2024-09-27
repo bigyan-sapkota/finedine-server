@@ -1,5 +1,5 @@
-import { queryUsersSchema, updateProfileSchema } from '@/dtos/users.dto';
-import { NotFoundException, UnauthorizedException } from '@/lib/exceptions';
+import { queryUsersSchema, updateProfileSchema, updateUserSchema } from '@/dtos/users.dto';
+import { ForbiddenException, NotFoundException, UnauthorizedException } from '@/lib/exceptions';
 import { handleAsync } from '@/middlewares/handle-async';
 import { User } from '@/models/users.model';
 import { isValidObjectId } from 'mongoose';
@@ -47,4 +47,15 @@ export const getUserDetails = handleAsync<{ id: string }>(async (req, res) => {
   if (!user) throw new NotFoundException('User not found');
 
   return res.json({ user });
+});
+
+export const updateUser = handleAsync<{ id: string }>(async (req, res) => {
+  if (!req.user) throw new UnauthorizedException();
+  if (req.user.role !== 'admin') throw new ForbiddenException('Only admins can update user');
+
+  const { role } = updateUserSchema.parse(req.body);
+  const user = await User.findByIdAndUpdate(req.params.id, { role });
+  if (!user) throw new NotFoundException('User not found');
+
+  return res.json({ message: 'User updated successfully', user });
 });

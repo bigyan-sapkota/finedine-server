@@ -8,9 +8,9 @@ export const devConsole = (...args: unknown[]) => {
 
 export const sessionOptions: CookieSessionInterfaces.CookieSessionOptions = {
   name: 'session',
-  httpOnly: env.NODE_ENV === 'production' ? true : false,
-  maxAge: 365 * 24 * 60 * 60 * 1000,
   keys: [env.SESSION_SECRET],
-  secure: env.NODE_ENV === 'production' ? true : false,
-  sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax'
+  maxAge: 365 * 24 * 60 * 60 * 1000,
+  httpOnly: true,
+  secure: env.NODE_ENV !== 'production' ? false : true,
+  sameSite: env.NODE_ENV !== 'production' ? 'lax' : 'none'
 };

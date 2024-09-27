@@ -14,6 +14,7 @@ import { regenerateSession } from './middlewares/regenerate-session';
 import { GoogleStrategy } from './passport/google.strategy';
 import { serializer } from './passport/serializer';
 import { authRoute } from './routes/auth.route';
+import { tablesRoute } from './routes/tables.route';
 import { usersRoute } from './routes/users.route';
 
 const app = express();
@@ -25,6 +26,7 @@ if (env.NODE_ENV === 'development') {
   app.use(morgan('common'));
 }
 app.use(cors({ origin: env.FRONTEND_URLS, credentials: true }));
+app.enable('trust proxy');
 app.use(cookieSession(sessionOptions));
 app.use(regenerateSession);
 
@@ -47,6 +49,7 @@ app.get(
 /* --------- routes --------- */
 app.use('/api/auth', authRoute);
 app.use('/api/users', usersRoute);
+app.use('/api/tables', tablesRoute);
 app.use(() => {
   throw new NotFoundException();
 });

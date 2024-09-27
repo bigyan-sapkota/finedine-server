@@ -27,3 +27,10 @@ export const queryUsersSchema = z.object({
   page: z.preprocess((val) => Number(val) || undefined, z.number().min(1).default(1)),
   role: z.enum(['user', 'admin']).optional()
 });
+
+export const updateUserSchema = z.object({
+  role: z.enum(['user', 'admin'], {
+    required_error: 'Please specify role',
+    invalid_type_error: 'Invalid role option'
+  })
+});

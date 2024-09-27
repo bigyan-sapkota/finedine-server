@@ -2,7 +2,8 @@ import {
   getProfile,
   getUserDetails,
   queryUsers,
-  updateProfile
+  updateProfile,
+  updateUser
 } from '@/controllers/users.controller';
 import { Router } from 'express';
 
@@ -11,4 +12,4 @@ export const usersRoute = router;
 
 router.route('/profile').get(getProfile).put(updateProfile);
 router.route('/').get(queryUsers);
-router.get('/:id', getUserDetails);
+router.route('/:id').get(getUserDetails).put(updateUser);
