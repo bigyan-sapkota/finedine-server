@@ -15,6 +15,7 @@ import { GoogleStrategy } from './passport/google.strategy';
 import { serializer } from './passport/serializer';
 import { authRoute } from './routes/auth.route';
 import { bookingsRoute } from './routes/bookings.route';
+import { notificationsRoute } from './routes/notifications.route';
 import { tablesRoute } from './routes/tables.route';
 import { usersRoute } from './routes/users.route';
 
@@ -52,6 +53,7 @@ app.use('/api/auth', authRoute);
 app.use('/api/users', usersRoute);
 app.use('/api/tables', tablesRoute);
 app.use('/api/bookings', bookingsRoute);
+app.use('/api/notifications', notificationsRoute);
 app.use(() => {
   throw new NotFoundException();
 });
