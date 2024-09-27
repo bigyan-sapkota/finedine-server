@@ -28,7 +28,11 @@ const envSchema = z
     ),
     SESSION_SECRET: z.string(),
 
-    MONGO_URI: z.string().url()
+    MONGO_URI: z.string().url(),
+
+    SMTP_SERVICE: z.string(),
+    SMTP_MAIL: z.string(),
+    SMTP_PASS: z.string()
   })
   .readonly();
 

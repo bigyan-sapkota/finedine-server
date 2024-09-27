@@ -6,6 +6,8 @@ import {
 import { ForbiddenException, NotFoundException, UnauthorizedException } from '@/lib/exceptions';
 import { handleAsync } from '@/middlewares/handle-async';
 import { Booking } from '@/models/bookings.model';
+import { User } from '@/models/users.model';
+import { sendBookingNotification } from '@/notifications/bookings.notifications';
 import { fetchBookings, validateBookingTables } from '@/services/bookings.services';
 
 export const bookTables = handleAsync(async (req, res) => {
@@ -28,6 +30,13 @@ export const bookTables = handleAsync(async (req, res) => {
   await Booking.insertMany(
     data.map((item) => ({ ...item, user: req.user?._id.toString(), table: item.tableId }))
   );
+
+  sendBookingNotification({
+    booking: { startsAt: data[0]?.startsAt! },
+    type: 'booked',
+    user: { email: req.user.email, id: req.user._id.toString(), name: req.user.name }
+  });
+
   return res.json({
     message: `${data.length === 1 ? 'Booking' : 'Bookings'} created successfully`
   });
@@ -45,8 +54,17 @@ export const cancelBooking = handleAsync<{ id: string }>(async (req, res) => {
     throw new ForbiddenException('Only admin or booking owner can cancel the booking');
   }
 
+  const user = req.user.role === 'admin' ? await User.findById(booking.user.toString()) : req.user;
+
   booking.isCancelled = true;
   booking.save();
+
+  sendBookingNotification({
+    booking: { startsAt: new Date(booking.startsAt).toISOString() },
+    type: 'cancelled',
+    user: { email: user!.email, id: user!._id.toString(), name: user!.name }
+  });
+
   return res.json({ message: 'Booking cancelled successfully' });
 });
 
