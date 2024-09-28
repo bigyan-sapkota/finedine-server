@@ -29,7 +29,6 @@ export const updateTable = handleAsync<{ id: string }>(async (req, res) => {
 
   if (isBooked && Object.keys(data).length !== 0)
     throw new ForbiddenException("Can't update table while the bookings are pending");
-  console.log(available, 'available');
 
   const updatedTable = await Table.findByIdAndUpdate(
     tableId,
@@ -67,7 +66,7 @@ export const deleteTable = handleAsync<{ id: string }>(async (req, res) => {
 
 export const fetchTables = handleAsync(async (req, res) => {
   const { tag } = fetchTablesSchema.parse(req.query);
-  console.log({ tag });
+
   const tables = await Table.find({ tag: tag });
   return res.json({ tables });
 });
@@ -79,4 +78,14 @@ export const getTableDetails = handleAsync<{ id: string }>(async (req, res) => {
   if (!table) throw new NotFoundException('Table not found');
 
   return res.json({ table });
+});
+
+export const fetchAvailableTables = handleAsync(async (req, res) => {
+  // const { date, hours, tag } = fetchAvailableTablesSchema.parse(req.query);
+  // const startsAt = date;
+  // const endsAt = new Date(new Date(startsAt).getTime() + hours * 60 * 60 * 1000).toISOString();
+
+  const result = await Table.find({});
+
+  return res.json({ tables: result });
 });

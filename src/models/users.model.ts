@@ -18,7 +18,7 @@ const userSchema = new Schema<UserSchema, Model<UserSchema>>(
     name: { type: String, required: true },
     email: { type: String, required: true },
     image: { type: String },
-    role: { type: String, enum: ['user', 'admin'] },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
     phone: { type: String }
   },
   { timestamps: true }

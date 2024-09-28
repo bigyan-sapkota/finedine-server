@@ -1,7 +1,11 @@
+import { isValidObjectId } from 'mongoose';
 import { z } from 'zod';
 
-const bookTableSchema = z.object({
-  tableId: z.string(),
+export const bookTablesSchema = z.object({
+  tableIds: z
+    .array(z.string().refine((id) => isValidObjectId(id), 'Invalid table id'))
+    .min(1, 'Select at least one table for booking')
+    .max(5, "Can't book more than 5 tables at once"),
   startsAt: z
     .string()
     .datetime()
@@ -15,6 +19,8 @@ const bookTableSchema = z.object({
       const date = new Date(startsAt);
       if (date.getTime() < Date.now()) return false;
       if (date.getMinutes() % 15 !== 0) return false;
+      if (date.getTime() > Date.now() + 8 * 24 * 60 * 60 * 1000) return false;
+      return true;
     }, 'Invalid date selected'),
   hours: z
     .number()
@@ -23,15 +29,9 @@ const bookTableSchema = z.object({
     .transform((val) => Math.round(val)),
   userId: z.undefined().optional()
 });
-const adminBookTableSchema = bookTableSchema.extend({ userId: z.string() });
-export const bookTablesSchema = z
-  .array(bookTableSchema)
-  .min(1, 'Select at least one table for booking')
-  .max(5, "Can't book more than 5 tables at once");
-export const adminBookTablesSchema = z
-  .array(adminBookTableSchema)
-  .min(1, 'Select at least one table for booking')
-  .max(5, "Can't book more than 5 tables at once");
+export const adminBookTablesSchema = bookTablesSchema.extend({
+  userId: z.string().refine((val) => isValidObjectId(val), 'Invalid user id')
+});
 
 export const getBookingsQuerySchema = z.object({
   cursor: z.string().optional(),

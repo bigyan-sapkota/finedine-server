@@ -11,3 +11,9 @@ export const updateTableSchema = createTableSchema
   .partial();
 
 export const fetchTablesSchema = z.object({ tag: z.string().optional() });
+
+export const fetchAvailableTablesSchema = z.object({
+  date: z.string().datetime(),
+  hours: z.preprocess((val) => Number(val), z.number().min(1).max(12)),
+  tag: z.string().optional()
+});

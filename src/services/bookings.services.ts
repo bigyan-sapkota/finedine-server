@@ -4,16 +4,26 @@ import { Booking } from '@/models/bookings.model';
 import { selectTableProperties, Table } from '@/models/tables.model';
 import { selectUserProperties } from '@/models/users.model';
 
-export const validateBookingTables = async (
-  tables: { tableId: string; startsAt: string; hours: number }[]
-) => {
+export const validateBookingTables = async ({
+  tableIds,
+  startsAt,
+  endsAt
+}: {
+  tableIds: string[];
+  startsAt: string;
+  userId: string;
+  endsAt: string;
+}) => {
   let promises: Promise<unknown>[] = [];
   let promise: Promise<unknown>;
-  for (const table of tables) {
-    const endsAt = new Date(new Date(table.startsAt).getTime() + table.hours * 60 * 60 * 1000);
-    promise = Booking.find<{ table: { available: boolean } }>({
-      table: table.tableId,
-      $and: [{ startsAt: { $gte: table.startsAt } }, { endsAt: { $lt: endsAt } }]
+  for (const tableId of tableIds) {
+    promise = Booking.findOne({
+      table: tableId,
+      $or: [
+        { $and: [{ startsAt: { $lte: startsAt } }, { endsAt: { $gt: startsAt } }] },
+        { $and: [{ startsAt: { $lt: endsAt } }, { endsAt: { $gt: endsAt } }] }
+      ],
+      isCancelled: false
     }).then((isBooked) => {
       if (isBooked) throw new BadRequestException('Some of the selected table is already booked');
     });
@@ -23,8 +33,8 @@ export const validateBookingTables = async (
   await Promise.all(promises);
   promises = [];
 
-  for (const table of tables) {
-    promise = Table.find({ _id: table.tableId, available: true }).then((result) => {
+  for (const tableId of tableIds) {
+    promise = Table.find({ _id: tableId, available: true }).then((result) => {
       if (!result) throw new BadRequestException('Table is not available for booking');
     });
     promises.push(promise);

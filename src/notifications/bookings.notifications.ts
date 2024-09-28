@@ -30,7 +30,7 @@ export const sendBookingNotification = async ({
   }
 
   await Promise.all([
-    addNotification({ description, title, userId: user.id }),
+    addNotification({ description, title, user: user.id }),
     sendMail({ mail: user.email, text: mailMessage, subject: title })
   ]);
 };

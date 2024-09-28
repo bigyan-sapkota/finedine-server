@@ -1,4 +1,9 @@
-import { createTableSchema, fetchTablesSchema, updateTableSchema } from '@/dtos/tables.dto';
+import {
+  createTableSchema,
+  fetchAvailableTablesSchema,
+  fetchTablesSchema,
+  updateTableSchema
+} from '@/dtos/tables.dto';
 import { z } from 'zod';
 import { ZodOpenApiPathsObject } from 'zod-openapi';
 
@@ -32,6 +37,14 @@ export const tablesDoc: ZodOpenApiPathsObject = {
         200: { description: 'Tables list fetched successfully' },
         400: { description: 'Invaild request query' }
       }
+    }
+  },
+  '/api/tables/available': {
+    get: {
+      tags,
+      summary: 'Fetch available tables list',
+      requestParams: { query: fetchAvailableTablesSchema },
+      responses: { 200: { description: 'Tables list fetched successfully' } }
     }
   },
   '/api/tables/{id}': {

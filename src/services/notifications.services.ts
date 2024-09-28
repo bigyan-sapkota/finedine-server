@@ -1,7 +1,7 @@
 import { Notification } from '@/models/notification.model';
 
 type Options = {
-  userId: string;
+  user: string;
   title: string;
   description: string | undefined;
 };

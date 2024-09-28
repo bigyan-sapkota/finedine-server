@@ -13,32 +13,40 @@ import { fetchBookings, validateBookingTables } from '@/services/bookings.servic
 export const bookTables = handleAsync(async (req, res) => {
   if (!req.user) throw new UnauthorizedException();
 
-  const data =
+  const { hours, startsAt, tableIds, userId } =
     req.user.role === 'admin'
       ? adminBookTablesSchema.parse(req.body)
       : bookTablesSchema.parse(req.body);
 
-  await validateBookingTables(data);
+  const user = req.user.role === 'admin' ? await User.findById(userId) : req.user;
+  if (!user) throw new NotFoundException('User does not exist');
+
+  const endsAt = new Date(new Date(startsAt).getTime() + hours * 60 * 60 * 1000).toISOString();
+  await validateBookingTables({
+    startsAt,
+    endsAt,
+    tableIds,
+    userId: user.id
+  });
   await Booking.insertMany(
-    data.map((item) => {
-      const endsAt = new Date(new Date(item.startsAt).getTime() + item.hours * 60 * 60 * 1000);
+    tableIds.map((tableId) => {
       return {
-        ...item,
-        user: req.user?.role === 'admin' ? item.userId : req.user?._id.toString(),
-        table: item.tableId,
-        endsAt
+        startsAt,
+        endsAt,
+        user,
+        table: tableId
       };
     })
   );
 
   sendBookingNotification({
-    booking: { startsAt: data[0]?.startsAt! },
+    booking: { startsAt },
     type: 'booked',
-    user: { email: req.user.email, id: req.user._id.toString(), name: req.user.name }
+    user: { email: user.email, id: user._id.toString(), name: user.name }
   });
 
   return res.status(201).json({
-    message: `${data.length === 1 ? 'Booking' : 'Bookings'} created successfully`
+    message: `${tableIds.length === 1 ? 'Booking' : 'Bookings'} created successfully`
   });
 });
 
@@ -76,5 +84,5 @@ export const getBookings = handleAsync(async (req, res) => {
     throw new ForbiddenException('You are not authorized to access this resource');
 
   const result = await fetchBookings(query);
-  return res.json({ bookings: result });
+  return res.json({ totalResults: result.length, bookings: result });
 });
